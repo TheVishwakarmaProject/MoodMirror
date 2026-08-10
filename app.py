@@ -1,5 +1,4 @@
 import streamlit as st
-import cv2
 import numpy as np
 from deepface import DeepFace
 from recommendations import get_recommendation
