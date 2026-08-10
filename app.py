@@ -1,5 +1,6 @@
 import streamlit as st
 import numpy as np
+from PIL import Image
 from deepface import DeepFace
 from recommendations import get_recommendation
 
@@ -96,33 +97,31 @@ photo = st.camera_input("📸 Take a picture")
 
 if photo is not None:
 
-    # Convert uploaded image into bytes
-    image_bytes = photo.getvalue()
+    # Convert uploaded image into a PIL image
+    image = Image.open(photo)
 
-    # Convert bytes into an OpenCV image
-    image_array = np.frombuffer(
-        image_bytes,
-        np.uint8
-    )
+    # Resize for faster processing
+    image = image.resize((480, 360))
 
-    frame = cv2.imdecode(
-        image_array,
-        cv2.IMREAD_COLOR
-    )
+    # Convert image to NumPy array
+    frame = np.array(image)
+
+    # Convert RGB to BGR
+    frame = frame[:, :, ::-1]
 
     # Analyze the image
     with st.spinner("🧠 Analyzing your expression..."):
 
         try:
 
-            small_frame = cv2.resize(frame, (480, 360))
-            
+            small_frame = frame
+
             result = DeepFace.analyze(
                 small_frame,
                 actions=["emotion"],
                 detector_backend="retinaface",
                 enforce_detection=True
-                )
+            )
 
             emotion = result[0]["dominant_emotion"]
 
@@ -136,29 +135,15 @@ if photo is not None:
             # -----------------------------------
 
             st.markdown(
-                f"""
-                <div class="result-box">
-
-                <div class="emotion">
-                😊 You look {emotion.upper()}
-                </div>
-
-                <p>
-                Model confidence: {confidence:.1f}%
-                </p>
-
+                f"""<div class="result-box">
+                <div class="emotion">😊 You look {emotion.upper()}</div>
+                <p>Model confidence: {confidence:.1f}%</p>
                 <hr>
-
                 <h3>💡 TRY THIS</h3>
-
-                <div class="recommendation">
-                {recommendation}
-                </div>
-
-                </div>
-                """,
+                <div class="recommendation">{recommendation}</div>
+                </div>""",
                 unsafe_allow_html=True
-            )
+                )
 
 
         except Exception as error:
@@ -176,8 +161,8 @@ if photo is not None:
 st.markdown(
     """
     <div class="disclaimer">
-    MoodMirror estimates facial expression using AI.
-    It does not diagnose emotions or mental-health conditions.
+        MoodMirror estimates facial expression using AI.
+        It does not diagnose emotions or mental-health conditions.
     </div>
     """,
     unsafe_allow_html=True
